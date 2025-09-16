@@ -1,16 +1,206 @@
 <!DOCTYPE html>
-
-<html>
-
+<html lang="en">
 <head>
-	<link rel="stylesheet" href="styles.css">
+  <meta charset="utf-8" />
+  <title>OTP Entry</title>
+  <style>
+    /* page layout */
+    body {
+      font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+      background: #f7f7f7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .card {
+      width: 880px;
+      max-width: 95%;
+      background: white;
+      border-radius: 8px;
+      border: 2px solid #111;
+      padding: 36px 48px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+
+    #verification_heading {
+      margin: 0 0 10px;
+      font-size: 22px;
+      font-weight: 700;
+      color: #111;
+    }
+
+    #verification_subtext {
+      margin: 0 0 28px;
+      font-size: 13px;
+      color: #666;
+      line-height: 1.4;
+    }
+
+    /* code container */
+    .code-container {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      margin: 20px 0 28px;
+    }
+
+    .code {
+      width: 68px;
+      height: 78px;
+      text-align: center;
+      font-size: 42px;
+      border-radius: 6px;
+      border: 1px solid #eee;
+      box-shadow: 0 2px 0 rgba(0,0,0,0.02) inset;
+      background: #fafafa;
+      color: #444;
+      transition: border-color .12s, box-shadow .12s;
+      outline: none;
+      -moz-appearance: textfield;
+    }
+
+    .code:focus {
+      border-color: #00c3ff;
+      box-shadow: 0 3px 12px rgba(0,195,255,0.12);
+      background: #fff;
+    }
+
+    .note {
+      display: inline-block;
+      background: #f0f0f0;
+      color: #666;
+      padding: 12px 18px;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-top: 6px;
+    }
+
+    /* small screens */
+    @media (max-width: 520px) {
+      .code { width: 44px; height: 56px; font-size: 28px; }
+      .card { padding: 20px; }
+    }
+  </style>
 </head>
-
 <body>
-	<!-- the entire body must be written by student -->
-    <script type="text/javascript" src="./script.js">
-</script>
+  <div class="card" role="main" aria-labelledby="verification_heading">
+    <h1 id="verification_heading">Verify Your Account</h1>
+    <p id="verification_subtext">
+      We emailed you the six digit code to <strong>acciojob@email.com</strong>.
+      Enter the code below to confirm your email address.
+    </p>
 
+    <div class="code-container" aria-label="OTP inputs">
+      <input inputmode="numeric" pattern="\d*" maxlength="1" class="code" aria-label="Digit 1" />
+      <input inputmode="numeric" pattern="\d*" maxlength="1" class="code" aria-label="Digit 2" />
+      <input inputmode="numeric" pattern="\d*" maxlength="1" class="code" aria-label="Digit 3" />
+      <input inputmode="numeric" pattern="\d*" maxlength="1" class="code" aria-label="Digit 4" />
+      <input inputmode="numeric" pattern="\d*" maxlength="1" class="code" aria-label="Digit 5" />
+      <input inputmode="numeric" pattern="\d*" maxlength="1" class="code" aria-label="Digit 6" />
+    </div>
+
+    <div class="note" aria-hidden="true">
+      This is design only. We didn't actually send you an email as we don't have your email, right?
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const inputs = Array.from(document.querySelectorAll('.code'));
+
+      // Focus first input on load
+      inputs[0].focus();
+
+      // Allow only digits, move forward on input
+      function onInput(e) {
+        const el = e.target;
+        // Keep only last digit entered (in case IME or pasted single char)
+        const val = el.value.replace(/\D/g, '');
+        el.value = val ? val.slice(-1) : '';
+
+        if (el.value !== '') {
+          // move to next if exists
+          const next = inputs[inputs.indexOf(el) + 1];
+          if (next) next.focus();
+        }
+      }
+
+      // Handle keydown for Backspace navigation
+      function onKeyDown(e) {
+        const el = e.target;
+        const idx = inputs.indexOf(el);
+
+        if (e.key === 'Backspace') {
+          // If current has a value -> clear it and remain (common UX)
+          if (el.value !== '') {
+            el.value = '';
+            // Keep focus on this input (but user expects previous if repeated backspaces)
+            e.preventDefault();
+            return;
+          }
+
+          // if empty, move to previous and clear it
+          const prev = inputs[idx - 1];
+          if (prev) {
+            prev.value = '';
+            prev.focus();
+            e.preventDefault();
+          }
+        } else if (e.key === 'ArrowLeft') {
+          const prev = inputs[idx - 1];
+          if (prev) { prev.focus(); e.preventDefault(); }
+        } else if (e.key === 'ArrowRight') {
+          const next = inputs[idx + 1];
+          if (next) { next.focus(); e.preventDefault(); }
+        } else {
+          // allow only digits (but don't block control keys)
+          if (e.key.length === 1 && /\D/.test(e.key)) {
+            e.preventDefault();
+          }
+        }
+      }
+
+      // Handle paste: distribute digits across inputs starting at focused index
+      function onPaste(e) {
+        e.preventDefault();
+        const paste = (e.clipboardData || window.clipboardData).getData('text');
+        const digits = paste.replace(/\D/g, '').split('');
+        if (!digits.length) return;
+
+        // start filling from the currently focused input
+        let idx = inputs.indexOf(e.target);
+        for (let d of digits) {
+          if (idx >= inputs.length) break;
+          inputs[idx].value = d;
+          idx++;
+        }
+
+        // focus next empty or last filled
+        const nextToFocus = inputs[Math.min(idx, inputs.length - 1)];
+        nextToFocus.focus();
+      }
+
+      inputs.forEach(inp => {
+        inp.addEventListener('input', onInput);
+        inp.addEventListener('keydown', onKeyDown);
+        inp.addEventListener('paste', onPaste);
+        // Prevent mobile browsers from offering non-numeric keyboard characters
+        inp.setAttribute('autocomplete', 'one-time-code');
+      });
+
+      // Utility: get the assembled code string
+      function getCode() {
+        return inputs.map(i => i.value || '').join('');
+      }
+
+      // Expose for debugging (optional)
+      window.getOTP = getCode;
+    })();
+  </script>
 </body>
-
 </html>
